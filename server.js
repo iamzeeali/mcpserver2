@@ -165,6 +165,6 @@ const httpServer = createServer(async (req, res) => {
 
 httpServer.listen(port, () => {
   console.log(
-    `Todo MCP server listening on http://localhost:${port}${MCP_PATH}`
+    `MCP server running on http://localhost:${port}${MCP_PATH}`
   );
 });
