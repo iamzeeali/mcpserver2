@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:widget": "vite build --config widget/vite.config.ts",
+    "build:widget:todo": "vite build --config widget/vite.config.ts --mode todo",
+    "build:widget:stats": "vite build --config widget/vite.config.ts --mode stats",
+    "build:widget": "npm run build:widget:todo && npm run build:widget:stats",
     "build": "npm run build:widget",
     "prestart": "npm run build",
     "start": "node server.js"

@@ -4,6 +4,12 @@ export type TodoTask = {
   completed: boolean;
 };
 
+export type TodoStats = {
+  total: number;
+  completed: number;
+  pending: number;
+};
+
 type ToolCallResult = {
   structuredContent?: { tasks?: TodoTask[] };
 };

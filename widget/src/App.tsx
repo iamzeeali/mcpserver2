@@ -27,12 +27,14 @@ export function App() {
   const [bridgeError, setBridgeError] = useState<string | null>(null);
 
   useEffect(() => {
+    // The widget must initialize this bridge before calling tools.
     initBridge().catch(() => {
       setBridgeError("Could not connect to ChatGPT host bridge.");
     });
   }, []);
 
   useEffect(() => {
+    // Keep the UI in sync when tools are invoked by the model itself.
     return subscribeToolResults((payload) => {
       const next = extractTasks(payload);
       if (next) setTasks(next);

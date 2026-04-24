@@ -13,8 +13,11 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Each UI is built as a self-contained HTML document and loaded into memory.
 const todoHtmlPath = path.join(__dirname, "dist", "todo-widget.html");
 const todoHtml = readFileSync(todoHtmlPath, "utf8");
+const statsHtmlPath = path.join(__dirname, "dist", "stats-widget.html");
+const statsHtml = readFileSync(statsHtmlPath, "utf8");
 
 const addTodoInputSchema = {
   title: z.string().min(1),
@@ -32,9 +35,20 @@ const replyWithTodos = (message) => ({
   structuredContent: { tasks: todos },
 });
 
+const replyWithStats = (message) => {
+  const total = todos.length;
+  const completed = todos.filter((task) => task.completed).length;
+  const pending = total - completed;
+  return {
+    content: message ? [{ type: "text", text: message }] : [],
+    structuredContent: { stats: { total, completed, pending } },
+  };
+};
+
 function createTodoServer() {
   const server = new McpServer({ name: "todo-app", version: "0.1.0" });
 
+  // Resource #1: widget shown for todo mutation tools.
   registerAppResource(
     server,
     "todo-widget",
@@ -46,6 +60,23 @@ function createTodoServer() {
           uri: "ui://widget/todo.html",
           mimeType: RESOURCE_MIME_TYPE,
           text: todoHtml,
+        },
+      ],
+    })
+  );
+
+  // Resource #2: widget shown for stats tool.
+  registerAppResource(
+    server,
+    "stats-widget",
+    "ui://widget/stats.html",
+    {},
+    async () => ({
+      contents: [
+        {
+          uri: "ui://widget/stats.html",
+          mimeType: RESOURCE_MIME_TYPE,
+          text: statsHtml,
         },
       ],
     })
@@ -69,6 +100,21 @@ function createTodoServer() {
       todos = [...todos, todo];
       return replyWithTodos(`Added "${todo.title}".`);
     }
+  );
+
+  registerAppTool(
+    server,
+    "get_todo_stats",
+    {
+      title: "Get todo stats",
+      description: "Returns summary stats for total, completed, and pending todos.",
+      inputSchema: {},
+      _meta: {
+        // This tool is bound to a dedicated stats widget.
+        ui: { resourceUri: "ui://widget/stats.html" },
+      },
+    },
+    async () => replyWithStats("Fetched todo stats.")
   );
 
   registerAppTool(
@@ -137,6 +183,7 @@ const httpServer = createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
 
+    // A fresh MCP server instance is created per request in this demo.
     const server = createTodoServer();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
